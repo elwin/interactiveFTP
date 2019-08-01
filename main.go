@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -32,8 +33,14 @@ var (
 		"pwd":     app.pwd,
 		"mode":    app.mode,
 		"get":     app.retr,
+		"put":     app.stor,
 	}
+	local = flag.String("local", "1-ff00:0:112,[127.0.0.1]:4000", "Local hostname (default: 1-ff00:0:112,[127.0.0.1]:4000")
 )
+
+func init() {
+	flag.Parse()
+}
 
 type App struct {
 	conn *ftp.ServerConn
@@ -80,7 +87,7 @@ func (app *App) connect(args []string) {
 		return
 	}
 
-	conn, err := ftp.Dial(args[0])
+	conn, err := ftp.Dial(*local, args[0])
 	if err != nil {
 		app.print(err)
 	}
@@ -176,5 +183,23 @@ func (app *App) retr(args []string) {
 		app.print(err)
 	} else {
 		app.print(fmt.Sprintf("Received %d bytes", n))
+	}
+}
+
+func (app *App) stor(args []string) {
+	if len(args) != 2 {
+		app.print("Must supply one argument for source and one for destination")
+		return
+	}
+
+	f, err := os.Open(args[0])
+	if err != nil {
+		app.print(err)
+		return
+	}
+
+	err = app.conn.Stor(args[1], f)
+	if err != nil {
+		app.print(err)
 	}
 }
