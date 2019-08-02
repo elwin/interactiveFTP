@@ -29,6 +29,7 @@ func main() {
 		"mode":    app.mode,
 		"get":     app.retr,
 		"put":     app.stor,
+		"quit":    app.quit,
 	}
 
 	if err := app.run(); err != nil {
@@ -246,5 +247,9 @@ func (app *App) quit(args []string) {
 	err := app.conn.Quit()
 	if err != nil {
 		app.print(err)
+	} else {
+		app.print("Goodbye")
 	}
+
+	os.Exit(0)
 }
