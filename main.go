@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -194,19 +195,53 @@ func (app *App) mode(args []string) {
 }
 
 func (app *App) retr(args []string) {
-	if len(args) != 2 {
-		app.print("Must supply one argument for source and one for destination")
+	if len(args) < 2 || len(args) > 4 {
+		app.print("Must supply one argument for source and one for destination, optionally one for offset and one for length")
 		return
 	}
 
-	resp, err := app.conn.Retr(args[0])
+	remotePath := args[0]
+	localPath := args[1]
+	offset := -1
+	length := -1
+
+	var resp *ftp.Response
+	var err error
+
+	if len(args) >= 3 {
+		offset, err = strconv.Atoi(args[2])
+		if err != nil {
+			app.print("Failed to parse offset")
+			return
+		}
+	}
+
+	if len(args) == 4 {
+		length, err = strconv.Atoi(args[3])
+		if err != nil {
+			app.print("Failed to parse length")
+			return
+		}
+	}
+
+	fmt.Println(offset)
+	fmt.Println(length)
+
+	if offset != -1 && length != -1 {
+		resp, err = app.conn.Eret(remotePath, offset, length)
+	} else if offset != -1 {
+		resp, err = app.conn.RetrFrom(remotePath, uint64(offset))
+	} else {
+		resp, err = app.conn.Retr(remotePath)
+	}
+
 	if err != nil {
 		app.print(err)
 		return
 	}
 	defer resp.Close()
 
-	f, err := os.Create(args[1])
+	f, err := os.Create(localPath)
 	if err != nil {
 		app.print(err)
 		return
